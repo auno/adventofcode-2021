@@ -63,6 +63,20 @@ fn part1(movements: &[Movement]) -> i32 {
     depth * forward
 }
 
+#[aoc(day2, part2)]
+fn part2(movements: &[Movement]) -> i32 {
+    let (depth, forward, _): (i32, i32, i32) = movements.iter()
+        .fold((0, 0, 0), |(depth, forward, aim), movement| {
+            match movement {
+                Up(amount) => (depth, forward, aim - amount),
+                Down(amount) => (depth, forward, aim + amount),
+                Forward(amount) => (depth + aim * amount, forward + amount, aim),
+            }
+        });
+
+    depth * forward
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -70,5 +84,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(150, part1(&parse(include_str!("../input/2021/day2.part1.test.150.txt")).unwrap()));
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(900, part2(&parse(include_str!("../input/2021/day2.part2.test.900.txt")).unwrap()));
     }
 }
