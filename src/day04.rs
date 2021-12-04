@@ -98,6 +98,25 @@ fn part1((nums, boards): &(Vec<i32>, Vec<BingoBoard>)) -> i32 {
     panic!("Shouldn't reach here for well-formed input")
 }
 
+#[aoc(day4, part2)]
+fn part2((nums, boards): &(Vec<i32>, Vec<BingoBoard>)) -> i32 {
+    let mut boards = boards.clone();
+    for num in nums {
+        for board in &mut boards {
+            board.mark(*num);
+        }
+
+        if boards.len() == 1 && boards[0].is_completed() {
+            let sum_unmarked: i32 = boards[0].unmarked().iter().sum();
+            return *num * sum_unmarked;
+        }
+
+        boards.retain(|b| !b.is_completed());
+    }
+
+    panic!("Shouldn't reach here for well-formed input")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,5 +124,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(4512, part1(&parse(include_str!("../input/2021/day4.part1.test.4512.txt")).unwrap()));
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(1924, part2(&parse(include_str!("../input/2021/day4.part2.test.1924.txt")).unwrap()));
     }
 }
