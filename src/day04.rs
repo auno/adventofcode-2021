@@ -84,6 +84,7 @@ fn parse(input: &str) -> Result<(Vec<i32>, Vec<BingoBoard>), ParseIntError> {
 #[aoc(day4, part1)]
 fn part1((nums, boards): &(Vec<i32>, Vec<BingoBoard>)) -> i32 {
     let mut boards = boards.clone();
+
     for num in nums {
         for board in &mut boards {
             board.mark(*num);
@@ -101,6 +102,7 @@ fn part1((nums, boards): &(Vec<i32>, Vec<BingoBoard>)) -> i32 {
 #[aoc(day4, part2)]
 fn part2((nums, boards): &(Vec<i32>, Vec<BingoBoard>)) -> i32 {
     let mut boards = boards.clone();
+
     for num in nums {
         for board in &mut boards {
             board.mark(*num);
