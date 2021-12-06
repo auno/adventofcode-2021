@@ -19,15 +19,8 @@ fn simulate(nums: &[i32], iterations: usize) -> usize {
         counts[*num as usize] += 1
     }
 
-    for _iteration in 0..iterations {
-        let zero = counts[0];
-
-        for i in 0..8 {
-            counts[i] = counts[i + 1];
-        }
-
-        counts[6] += zero;
-        counts[8] = zero;
+    for i in 0..iterations {
+        counts[(i + 1 + 6) % 9] += counts[i % 9];
     }
 
     counts.iter().sum()
