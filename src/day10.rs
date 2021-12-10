@@ -125,23 +125,11 @@ fn part2(lines: &Vec<Vec<Token>>) -> i64 {
             }
         }
 
-        let mut score = 0;
-        let mut stack2: Vec<Token> = vec![];
-
-        while let Some(t) = stack.pop() {
-            match t {
-                ParenClose | SquareClose | CurlyClose | AngleClose => { stack2.push(*t); }
-                ParenOpen | SquareOpen | CurlyOpen | AngleOpen => {
-                    match (t, stack2.pop()) {
-                        (opening, Some(closing)) if Token::matches(opening, &closing) => {},
-                        (opening, None) => {
-                            score = score * 5 + opening.score();
-                        }
-                        _ => panic!()
-                    }
-                },
-            }
-        }
+        let score = stack
+            .iter()
+            .rev()
+            .map(|t| t.score())
+            .fold(0, |acc, s| acc * 5 + s);
 
         scores.push(score);
     }
