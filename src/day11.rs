@@ -30,12 +30,11 @@ fn neighbors((i, j): &(i32, i32)) -> impl IntoIterator<Item = (i32, i32)> {
         .filter(move |(a, b)| !(*a == i && *b == j))
 }
 
-#[aoc(day11, part1)]
-fn part1((energy, steps): &(HashMap<(i32, i32), i32>, usize)) -> usize {
+fn simulate(energy: &HashMap<(i32, i32), i32>, max_steps: Option<usize>) -> (usize, usize) {
     let mut energy = energy.clone();
     let mut num_flashes = 0;
 
-    for _step in 0..*steps {
+    for step in 0..max_steps.unwrap_or(usize::MAX) {
         for (_, v) in &mut energy {
             *v += 1;
         }
@@ -73,9 +72,25 @@ fn part1((energy, steps): &(HashMap<(i32, i32), i32>, usize)) -> usize {
         }
 
         num_flashes += positions_flashed.len();
+
+        if positions_flashed.len() == energy.len() {
+            return (step + 1, num_flashes);
+        }
     }
 
+    (usize::MAX, num_flashes)
+}
+
+#[aoc(day11, part1)]
+fn part1((energy, steps): &(HashMap<(i32, i32), i32>, usize)) -> usize {
+    let (_, num_flashes) = simulate(energy, Some(*steps));
     num_flashes
+}
+
+#[aoc(day11, part2)]
+fn part2((energy, _): &(HashMap<(i32, i32), i32>, usize)) -> usize {
+    let (steps_simulated, _) = simulate(energy, None);
+    steps_simulated
 }
 
 #[cfg(test)]
@@ -95,5 +110,10 @@ mod tests {
     #[test]
     fn part1_example2_2_steps() {
         assert_eq!(9, part1(&(parse_input(include_str!("../input/2021/day11.part1.test.9.txt")).unwrap(), 2)));
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(195, part2(&(parse_input(include_str!("../input/2021/day11.part2.test.195.txt")).unwrap(), 100)));
     }
 }
