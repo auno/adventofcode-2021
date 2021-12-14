@@ -33,11 +33,11 @@ fn part1((template, rules): &(Vec<char>, HashMap<(char, char), char>)) -> usize 
     for _step in 0..10 {
         let between: Vec<char> = polymer
             .windows(2)
-            .map(|w| rules.get(&(w[0], w[1])).unwrap())
+            .filter_map(|w| rules.get(&(w[0], w[1])))
             .cloned()
             .collect();
 
-        polymer = polymer.into_iter().interleave(between.into_iter()).collect();
+        polymer = polymer.into_iter().interleave(between).collect();
     }
 
     let counts = polymer.iter().counts();
@@ -55,10 +55,6 @@ fn part2((template, rules): &(Vec<char>, HashMap<(char, char), char>)) -> usize 
 
     for _step in 0..40 {
         for ((a, b), count) in pairs.clone().into_iter() {
-            if count == 0 {
-                continue;
-            }
-
             if let Some(rule) = rules.get(&(a, b)) {
                 *pairs.entry((a, b)).or_insert(0) -= count;
                 *pairs.entry((a, *rule)).or_insert(0) += count;
@@ -67,25 +63,20 @@ fn part2((template, rules): &(Vec<char>, HashMap<(char, char), char>)) -> usize 
         }
     }
 
-    let mut individual_counts: HashMap<char, usize> = pairs
+    let individual_counts: HashMap<char, usize> = pairs
         .iter()
-        .flat_map(|((a, b), count)| [(a, count), (b, count)])
+        .flat_map(|((a, _), count)| [(a, count)])
+        .interleave([(template.last().unwrap(), &1)].into_iter())
         .fold(HashMap::new(), |mut acc, (c, count)| {
             *acc.entry(*c).or_insert(0) += count;
             acc
         });
 
-    *individual_counts.entry(*template.first().unwrap()).or_default() += 1;
-    *individual_counts.entry(*template.last().unwrap()).or_default() += 1;
-
-    for (_, count) in individual_counts.iter_mut() {
-        *count /= 2;
-    }
-
-    let ((_, min), (_, max)) = individual_counts.iter().minmax_by_key(|(_, count)| **count).into_option().unwrap();
+    let (min, max) = individual_counts.values().minmax().into_option().unwrap();
 
     max - min
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
