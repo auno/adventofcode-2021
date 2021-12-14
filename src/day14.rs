@@ -54,21 +54,17 @@ fn part2((template, rules): &(Vec<char>, HashMap<(char, char), char>)) -> usize 
         .counts();
 
     for _step in 0..40 {
-        let mut next_pairs = pairs.clone();
-
-        for ((a, b), count) in pairs.into_iter() {
+        for ((a, b), count) in pairs.clone().into_iter() {
             if count == 0 {
                 continue;
             }
 
             if let Some(rule) = rules.get(&(a, b)) {
-                *next_pairs.entry((a, b)).or_insert(0) -= count;
-                *next_pairs.entry((a, *rule)).or_insert(0) += count;
-                *next_pairs.entry((*rule, b)).or_insert(0) += count;
+                *pairs.entry((a, b)).or_insert(0) -= count;
+                *pairs.entry((a, *rule)).or_insert(0) += count;
+                *pairs.entry((*rule, b)).or_insert(0) += count;
             }
         }
-
-        pairs = next_pairs;
     }
 
     let mut individual_counts: HashMap<char, usize> = pairs
