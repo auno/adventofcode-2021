@@ -1,8 +1,9 @@
-use std::collections::{HashMap, VecDeque};
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day15)]
-fn parse(input: &str) -> (HashMap<(i32, i32), i32>, usize) {
+fn parse(input: &str) -> (HashMap<(i32, i32), i32>, i32) {
     let size = input.lines().count();
 
     (
@@ -13,33 +14,50 @@ fn parse(input: &str) -> (HashMap<(i32, i32), i32>, usize) {
             .enumerate()
             .map(|(i, v)| (((i / size) as i32, (i % size) as i32), v))
             .collect(),
-        size
+        size as i32
     )
 }
 
 #[aoc(day15, part1)]
-fn part1((map, size): &(HashMap<(i32, i32), i32>, usize)) -> i32 {
-    let mut distances: HashMap<(i32, i32), i32> = HashMap::new();
-    let mut queue: VecDeque<(i32, i32)> = VecDeque::new();
+fn part1((map, size): &(HashMap<(i32, i32), i32>, i32)) -> i32 {
+    let mut cumulative_risk: HashMap<(i32, i32), i32> = HashMap::new();
+    let mut queue: BinaryHeap<(Reverse<i32>, i32, i32)> = BinaryHeap::new();
 
-    distances.insert((0, 0), 0);
-    queue.push_back((0, 0));
+    cumulative_risk.insert((0, 0), 0);
+    queue.push((Reverse(0), 0, 0));
 
-    while let Some((ci, cj)) = queue.pop_front() {
-        for (ni, nj) in [(ci - 1, cj), (ci + 1, cj), (ci, cj - 1), (ci, cj + 1)] {
-            if let Some(risk) = map.get(&(ci, cj)) {
-                let cdist = *distances.get(&(ci, cj)).unwrap();
-                let ndist = distances.entry((ni, nj)).or_insert(i32::MAX);
+    while let Some((Reverse(current_cumulative_risk), current_i, current_j)) = queue.pop() {
+        for (neighbor_i, neighbor_j) in [(current_i - 1, current_j), (current_i + 1, current_j), (current_i, current_j - 1), (current_i, current_j + 1)] {
+            if let Some(neighbor_risk) = map.get(&(neighbor_i, neighbor_j)) {
+                let neighbor_cumulative_risk = cumulative_risk.entry((neighbor_i, neighbor_j)).or_insert(i32::MAX);
 
-                if *ndist > cdist + risk {
-                    *ndist = cdist + risk;
-                    queue.push_back((ni, nj));
+                if *neighbor_cumulative_risk > current_cumulative_risk + neighbor_risk {
+                    *neighbor_cumulative_risk = current_cumulative_risk + neighbor_risk;
+                    queue.push((Reverse(*neighbor_cumulative_risk), neighbor_i, neighbor_j));
                 }
             }
         }
     }
 
-    distances[&((size - 1) as i32, (size - 1) as i32)]
+    cumulative_risk[&(size - 1, size - 1)]
+}
+
+
+#[aoc(day15, part2)]
+fn part2((map, size): &(HashMap<(i32, i32), i32>, i32)) -> i32 {
+    let map: HashMap<(i32, i32), i32> = map.iter()
+        .flat_map(|((i, j), risk)| {
+            [
+                ((*i+size*0, *j+size*0), ((risk-1)%9)+1), ((*i+size*1, *j+size*0), ((risk+0)%9)+1), ((*i+size*2, *j+size*0), ((risk+1)%9)+1), ((*i+size*3, *j+size*0), ((risk+2)%9)+1), ((*i+size*4, *j+size*0), ((risk+3)%9)+1),
+                ((*i+size*0, *j+size*1), ((risk+0)%9)+1), ((*i+size*1, *j+size*1), ((risk+1)%9)+1), ((*i+size*2, *j+size*1), ((risk+2)%9)+1), ((*i+size*3, *j+size*1), ((risk+3)%9)+1), ((*i+size*4, *j+size*1), ((risk+4)%9)+1),
+                ((*i+size*0, *j+size*2), ((risk+1)%9)+1), ((*i+size*1, *j+size*2), ((risk+2)%9)+1), ((*i+size*2, *j+size*2), ((risk+3)%9)+1), ((*i+size*3, *j+size*2), ((risk+4)%9)+1), ((*i+size*4, *j+size*2), ((risk+5)%9)+1),
+                ((*i+size*0, *j+size*3), ((risk+2)%9)+1), ((*i+size*1, *j+size*3), ((risk+3)%9)+1), ((*i+size*2, *j+size*3), ((risk+4)%9)+1), ((*i+size*3, *j+size*3), ((risk+5)%9)+1), ((*i+size*4, *j+size*3), ((risk+6)%9)+1),
+                ((*i+size*0, *j+size*4), ((risk+3)%9)+1), ((*i+size*1, *j+size*4), ((risk+4)%9)+1), ((*i+size*2, *j+size*4), ((risk+5)%9)+1), ((*i+size*3, *j+size*4), ((risk+6)%9)+1), ((*i+size*4, *j+size*4), ((risk+7)%9)+1),
+            ]
+        })
+        .collect();
+
+    part1(&(map, size * 5))
 }
 
 #[cfg(test)]
@@ -49,5 +67,15 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(40, part1(&parse(include_str!("../input/2021/day15.part1.test.40.txt"))));
+    }
+
+    #[test]
+    fn part2_example1() {
+        assert_eq!(315, part2(&parse(include_str!("../input/2021/day15.part2.test.315.txt"))));
+    }
+
+    #[test]
+    fn part2_example2() {
+        assert_eq!(10, part1(&parse(include_str!("../input/2021/day15.part2.test.10.txt"))));
     }
 }
