@@ -1,20 +1,91 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use crate::day16::Packet::{LiteralValuePacket, OperatorPacket};
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+enum Operator {
+    Sum,
+    Product,
+    Min,
+    Max,
+    GreaterThan,
+    LessThan,
+    EqualTo,
+}
+
+impl From<&[u8]> for Operator {
+    fn from(input: &[u8]) -> Self {
+        debug_assert_eq!(input.len(), 3);
+        match decimal(&input[0..3]) {
+            0 => Operator::Sum,
+            1 => Operator::Product,
+            2 => Operator::Min,
+            3 => Operator::Max,
+            5 => Operator::GreaterThan,
+            6 => Operator::LessThan,
+            7 => Operator::EqualTo,
+            _ => panic!()
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 enum Packet {
-    LiteralValuePacket { version: u8, value: u32 },
-    OperatorPacket { version: u8, packets: Vec<Packet> },
+    LiteralValuePacket { version: u8, value: u64 },
+    OperatorPacket { version: u8, operator: Operator, packets: Vec<Packet> },
+}
+
+impl Packet {
+    fn value(&self) -> u64 {
+        match self {
+            Packet::LiteralValuePacket { version: _, value } => *value,
+            Packet::OperatorPacket { version: _, operator: Operator::Sum, packets } =>
+                packets.iter().map(Self::value).sum(),
+            Packet::OperatorPacket { version: _, operator: Operator::Product, packets } =>
+                packets.iter().map(Self::value).product(),
+            Packet::OperatorPacket { version: _, operator: Operator::Min, packets } =>
+                packets.iter().map(Self::value).min().unwrap(),
+            Packet::OperatorPacket { version: _, operator: Operator::Max, packets } =>
+                packets.iter().map(Self::value).max().unwrap(),
+            Packet::OperatorPacket { version: _, operator: Operator::GreaterThan, packets } =>
+                match packets[0].value() > packets[1].value() {
+                true => 1,
+                false => 0,
+            },
+            Packet::OperatorPacket { version: _, operator: Operator::LessThan, packets } =>
+                match packets[0].value() < packets[1].value() {
+                    true => 1,
+                    false => 0,
+                },
+            Packet::OperatorPacket { version: _, operator: Operator::EqualTo, packets } =>
+                match packets[0].value() == packets[1].value() {
+                    true => 1,
+                    false => 0,
+                },
+        }
+    }
+
+    fn sum_version_numbers(&self) -> u64 {
+        match self {
+            Packet::LiteralValuePacket { version, value: _ } => *version as u64,
+            Packet::OperatorPacket {  version, operator: _, packets  } =>
+                *version as u64 + packets.iter().map(Self::sum_version_numbers).map(|a| a).sum::<u64>(),
+        }
+    }
+}
+
+fn decimal(input: &[u8]) -> u64 {
+    debug_assert!(input.len() <= 64);
+    input.iter().fold(0, |acc, value| (acc << 1) + *value as u64)
 }
 
 fn parse_literal_packet(input: &[u8], mut pos: usize) -> (Packet, usize) {
-    let version = input[pos..(pos+3)].iter().fold(0, |acc, value| (acc << 1) + value);
-    let mut bits = vec![];
+    let version = decimal(&input[pos..(pos+3)]) as u8;
+    let mut value = vec![];
     pos += 6;
 
     loop {
         for bit in &input[(pos + 1)..(pos + 5)] {
-            bits.push(bit);
+            value.push(*bit);
         }
 
         pos += 5;
@@ -24,20 +95,21 @@ fn parse_literal_packet(input: &[u8], mut pos: usize) -> (Packet, usize) {
         }
     }
 
-    let value = bits.iter().fold(0, |acc, v| (acc << 1) + **v as u32);
+    let value = decimal(&value);
 
     (LiteralValuePacket { version, value }, pos)
 }
 
 fn parse_operator_packet(input: &[u8], mut pos: usize) -> (Packet, usize) {
-    let version = input[pos..(pos+3)].iter().fold(0, |acc, value| (acc << 1) + value);
+    let version = decimal(&input[pos..(pos+3)]) as u8;
+    let operator = (&input[(pos+3)..(pos+6)]).into();
     let mut packets = vec![];
     pos += 6;
 
     match input[pos] {
         0 => {
             pos += 1;
-            let mut bits_to_read: usize = input[pos..(pos+15)].iter().fold(0, |acc, value| (acc << 1) + *value as usize);
+            let mut bits_to_read: usize = decimal(&input[pos..(pos+15)]) as usize;
             pos += 15;
 
             while bits_to_read > 0 {
@@ -50,7 +122,7 @@ fn parse_operator_packet(input: &[u8], mut pos: usize) -> (Packet, usize) {
         },
         1 => {
             pos += 1;
-            let packets_to_read = input[pos..(pos+11)].iter().fold(0, |acc, value| (acc << 1) + *value as usize);
+            let packets_to_read = decimal(&input[pos..(pos+11)]) as usize;
             pos += 11;
 
             for _ in 0..packets_to_read {
@@ -62,7 +134,7 @@ fn parse_operator_packet(input: &[u8], mut pos: usize) -> (Packet, usize) {
         _ => panic!(),
     }
 
-    (OperatorPacket { version, packets }, pos)
+    (OperatorPacket { version, operator, packets }, pos)
 }
 
 fn parse_packet(input: &[u8], pos: usize) -> (Packet, usize) {
@@ -82,19 +154,16 @@ fn parse_input(input: &str) -> Vec<u8> {
         .collect()
 }
 
-fn sum_version_numbers(packet: &Packet) -> u32 {
-    match packet {
-        Packet::LiteralValuePacket { version, value: _ } => *version as u32,
-        Packet::OperatorPacket {  version, packets  } =>
-            *version as u32 + packets.iter().map(sum_version_numbers).map(|a| a).sum::<u32>(),
-    }
+#[aoc(day16, part1)]
+fn part1(transmission: &[u8]) -> u64 {
+    let (packet, _) = parse_packet(transmission, 0);
+    packet.sum_version_numbers()
 }
 
-#[aoc(day16, part1)]
-fn part1(transmission: &[u8]) -> u32 {
+#[aoc(day16, part2)]
+fn part2(transmission: &[u8]) -> u64 {
     let (packet, _) = parse_packet(transmission, 0);
-
-    sum_version_numbers(&packet)
+    packet.value()
 }
 
 #[cfg(test)]
@@ -134,5 +203,45 @@ mod tests {
     #[test]
     fn part1_example7() {
         assert_eq!(9, part1(&parse_input(include_str!("../input/2021/day16.part1.test.9.txt"))));
+    }
+
+    #[test]
+    fn part2_example0() {
+        assert_eq!(3, part2(&parse_input(include_str!("../input/2021/day16.part2.test.0.txt"))));
+    }
+
+    #[test]
+    fn part2_example1() {
+        assert_eq!(54, part2(&parse_input(include_str!("../input/2021/day16.part2.test.1.txt"))));
+    }
+
+    #[test]
+    fn part2_example2() {
+        assert_eq!(7, part2(&parse_input(include_str!("../input/2021/day16.part2.test.2.txt"))));
+    }
+
+    #[test]
+    fn part2_example3() {
+        assert_eq!(9, part2(&parse_input(include_str!("../input/2021/day16.part2.test.3.txt"))));
+    }
+
+    #[test]
+    fn part2_example4() {
+        assert_eq!(1, part2(&parse_input(include_str!("../input/2021/day16.part2.test.4.txt"))));
+    }
+
+    #[test]
+    fn part2_example5() {
+        assert_eq!(0, part2(&parse_input(include_str!("../input/2021/day16.part2.test.5.txt"))));
+    }
+
+    #[test]
+    fn part2_example6() {
+        assert_eq!(0, part2(&parse_input(include_str!("../input/2021/day16.part2.test.6.txt"))));
+    }
+
+    #[test]
+    fn part2_example7() {
+        assert_eq!(1, part2(&parse_input(include_str!("../input/2021/day16.part2.test.7.txt"))));
     }
 }
