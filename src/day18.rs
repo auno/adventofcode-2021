@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 use Token::*;
@@ -178,8 +179,16 @@ fn parse(input: &str) -> Vec<Tokens> {
 #[aoc(day18, part1)]
 fn part1(input: &Vec<Tokens>) -> i32 {
     let tokens: Tokens = sum(input);
-
     magnitude(&tokens)
+}
+
+#[aoc(day18, part2)]
+fn part2(input: &Vec<Tokens>) -> i32 {
+    (0..input.len()).cartesian_product(0..input.len())
+        .filter(|(i,j)| i != j)
+        .map(|(i, j)| magnitude(&sum(&vec![input[i].clone(), input[j].clone()])))
+        .max()
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -189,8 +198,8 @@ mod tests {
     #[test]
     fn add_examples() {
         assert_eq!(
-            vec![LeftBracket, LeftBracket, Number(1), Number(2), RightBracket, LeftBracket, LeftBracket, Number(3), Number(4), RightBracket, Number(5), RightBracket, RightBracket],
-            add(&vec![LeftBracket, Number(1), Number(2), RightBracket], &vec![LeftBracket, LeftBracket, Number(3), Number(4), RightBracket, Number(5), RightBracket])
+            tokenize("[[1,2],[[3,4],5]]"),
+            add(&tokenize("[1,2]"), &tokenize("[[3,4],5]"))
         );
         assert_eq!(
             tokenize("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]"),
@@ -362,5 +371,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(4140, part1(&parse(include_str!("../input/2021/day18.part1.test.4140.txt"))));
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(3993, part2(&parse(include_str!("../input/2021/day18.part2.test.3993.txt"))));
     }
 }
