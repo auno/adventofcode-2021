@@ -1,6 +1,7 @@
+use std::collections::HashSet;
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
-use nalgebra::{ArrayStorage, Const, Matrix, Matrix1xX, Matrix3, Matrix3xX, Matrix6x3, MatrixXx1};
+use nalgebra::{ArrayStorage, Const, Matrix, Matrix1xX, Matrix3, Matrix3x1, Matrix3xX};
 
 fn parse_scanner(input: &str) -> Matrix3xX<i32> {
     Matrix3xX::from_iterator(
@@ -62,25 +63,19 @@ fn rotations() -> [Matrix<i32, Const<3>, Const<3>, ArrayStorage<i32, 3, 3>>; 24]
     ]
 }
 
-fn find_overlap(known: &Matrix3xX<i32>, candidate: &Matrix3xX<i32>) -> Option<Matrix3xX<i32>> {
+fn test_overlap(known: &Matrix3xX<i32>, candidate: &Matrix3xX<i32>) -> Option<(Matrix3x1<i32>, Matrix3xX<i32>)> {
     for rotation in rotations() {
-        let rotated = rotation * candidate.clone();
+        let candidate_rotated = rotation * candidate.clone();
+
         for (ai, bi) in (0..known.ncols()).cartesian_product(0..candidate.ncols()) {
             let ap = known.column(ai);
+            let bp = candidate_rotated.column(bi);
+            let candidate_location = ap - bp;
+            let normalizer = candidate_location * Matrix1xX::repeat(candidate.ncols(), 1);
+            let candidate_normalized = &candidate_rotated + &normalizer;
 
-            let bp = rotated.column(bi);
-            let diff = bp - ap;
-
-            debug_assert_eq!(bp - diff, ap);
-
-            let diff = diff * Matrix1xX::repeat(candidate.ncols(), 1);
-            let b_adjusted = &rotated - &diff;
-
-            let mut cols = known.column_iter().collect_vec();
-            cols.append(&mut b_adjusted.column_iter().collect_vec());
-
-            if known.column_iter().interleave(b_adjusted.column_iter()).counts().iter().filter(|(_, count)| **count > 1).count() >= 12 {
-                return Some(rotated - diff);
+            if known.column_iter().interleave(candidate_normalized.column_iter()).counts().iter().filter(|(_, count)| **count > 1).count() >= 12 {
+                return Some((candidate_location, candidate_normalized));
             }
         }
     }
@@ -88,39 +83,60 @@ fn find_overlap(known: &Matrix3xX<i32>, candidate: &Matrix3xX<i32>) -> Option<Ma
     None
 }
 
-#[aoc(day19, part1)]
-fn part1(scanners: &Vec<Matrix3xX<i32>>) -> usize {
-    let mut known: Vec<usize> = vec![0];
-    let mut resolved: Vec<Matrix3xX<i32>> = vec![scanners[0].clone()];
+fn find_overlap(scanners: &Vec<Matrix3xX<i32>>) -> Vec<(usize, Matrix3x1<i32>, Matrix3xX<i32>)> {
+    let mut resolved: Vec<(usize, Matrix3x1<i32>, Matrix3xX<i32>)> = vec![(0, Matrix3x1::new(0, 0, 0), scanners[0].clone())];
+    let mut incompatibles = HashSet::new();
 
-    while known.len() < scanners.len() {
+    while resolved.len() < scanners.len() {
         'outer: for candidate_index in 0..scanners.len() {
-            if known.contains(&candidate_index) {
+            if resolved.iter().any(|(reference_index, _, _)| candidate_index == *reference_index) {
                 continue;
             }
 
-            for reference_index in 0..resolved.len() {
-                let reference = &resolved[reference_index];
+            for resolved_index in 0..resolved.len() {
+                let (reference_index, _, reference) = &resolved[resolved_index];
+
+                if incompatibles.contains(&(*reference_index, candidate_index)) {
+                    continue;
+                }
+
                 let candidate = &scanners[candidate_index];
 
-                if let Some(scanner) = find_overlap(reference, candidate) {
-                    known.push(candidate_index);
-                    resolved.push(scanner);
+                if let Some((location, scanner)) = test_overlap(reference, candidate) {
+                    resolved.push((candidate_index, location, scanner));
                     break 'outer;
+                } else {
+                    incompatibles.insert((*reference_index, candidate_index));
                 }
             }
         }
     }
 
     resolved
+}
+
+#[aoc(day19, part1)]
+fn part1(scanners: &Vec<Matrix3xX<i32>>) -> usize {
+    find_overlap(scanners)
         .iter()
-        .flat_map(|scanner| scanner.column_iter().map(|col| (
-            col.as_slice()[0],
-            col.as_slice()[1],
-            col.as_slice()[2],
-        )))
+        .flat_map(|(_, _, scanner)| scanner.column_iter())
         .unique()
         .count()
+}
+
+#[aoc(day19, part2)]
+fn part2(scanners: &Vec<Matrix3xX<i32>>) -> i32 {
+    let overlap = find_overlap(scanners);
+
+    (0..overlap.len()).cartesian_product(0..overlap.len())
+        .map(|(i, j)| {
+            let (_, a, _) = &overlap[i];
+            let (_, b, _) = &overlap[j];
+
+            (a-b).abs().sum()
+        })
+        .max()
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -130,5 +146,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(79, part1(&parse(include_str!("../input/2021/day19.part1.test.79.txt"))));
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(3621, part2(&parse(include_str!("../input/2021/day19.part2.test.3621.txt"))));
     }
 }
