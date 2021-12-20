@@ -71,18 +71,6 @@ fn image_bounds(image: &Image) -> (i32, i32, i32, i32) {
         ))
 }
 
-fn print_image(image: &Image, oob: Pixel) {
-    let (min_i, max_i, min_j, max_j) = image_bounds(image);
-
-    for i in min_i..=max_i {
-        for j in min_j..=max_j {
-            eprint!("{}", image.get(&(i, j)).unwrap_or(&oob));
-        }
-
-        eprintln!()
-    }
-}
-
 fn enhance(algorithm: &Vec<char>, image: &Image, oob: Pixel) -> (Image, Pixel) {
     let mut enhanced_image = HashMap::new();
     let (min_i, max_i, min_j, max_j) = image_bounds(image);
@@ -132,6 +120,23 @@ fn part1((algorithm, image): &(Vec<char>, Image)) -> usize {
         .count()
 }
 
+#[aoc(day20, part2)]
+fn part2((algorithm, image): &(Vec<char>, Image)) -> usize {
+    let mut image = image.clone();
+    let mut oob = Pixel::Dark;
+
+    for _step in 0..50 {
+        let (enhanced_image, enhanced_oob) = enhance(algorithm, &image, oob);
+        image = enhanced_image;
+        oob = enhanced_oob;
+    }
+
+    image
+        .values()
+        .filter(|p| **p == Pixel::Light)
+        .count()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,9 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn part1_test0() {
-        let (algorithm, _) = parse(include_str!("../input/2021/day20.part1.test.35.txt"));
-        let image = parse_image("...\n...\n...\n");
-        assert_eq!(0, part1(&(algorithm, image)));
+    fn part2_example() {
+        assert_eq!(3351, part2(&parse(include_str!("../input/2021/day20.part2.test.3351.txt"))));
     }
 }
