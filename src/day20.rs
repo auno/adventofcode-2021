@@ -75,7 +75,6 @@ fn enhance(algorithm: &Vec<Pixel>, image: &Image, oob: Pixel) -> (Image, Pixel) 
     let mut enhanced_image = HashMap::new();
     let (min_i, max_i, min_j, max_j) = image_bounds(image);
 
-
     for (i, j) in ((min_i-1)..=(max_i+1)).cartesian_product((min_j-1)..=(max_j+1)) {
         let index_pixels: [(i32, i32); 9] = [
             (i-1, j-1), (i-1, j), (i-1, j+1),
