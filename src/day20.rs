@@ -97,7 +97,7 @@ fn enhance(algorithm: &Vec<char>, image: &Image, oob: Pixel) -> (Image, Pixel) {
 
     let enhanced_oob: Pixel = match oob {
         Pixel::Dark => algorithm[0].try_into().unwrap(),
-        Pixel::Light => algorithm[255].try_into().unwrap(),
+        Pixel::Light => algorithm[511].try_into().unwrap(),
     };
 
     (enhanced_image, enhanced_oob)
