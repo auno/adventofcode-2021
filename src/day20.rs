@@ -1,6 +1,5 @@
 use std::cmp::{max, min};
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 
@@ -13,15 +12,6 @@ enum Day20Error {
 enum Pixel {
     Dark,
     Light,
-}
-
-impl Display for Pixel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            Pixel::Dark => ' ',
-            Pixel::Light => '▓',
-        })
-    }
 }
 
 impl TryFrom<char> for Pixel {
