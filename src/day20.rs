@@ -28,24 +28,20 @@ impl TryFrom<char> for Pixel {
 
 type Image = HashMap<(i32, i32), Pixel>;
 
-fn parse_image(image: &str) -> Image {
-    image
+#[aoc_generator(day20)]
+fn parse(input: &str) -> (Vec<Pixel>, Image) {
+    let (algorithm, image) = input.split_once("\n\n").unwrap();
+    let algorithm = algorithm.chars().map(|c| c.try_into().unwrap()).collect::<Vec<_>>();
+    let image = image
         .lines()
         .enumerate()
         .flat_map(|(i, line)| {
             line.chars()
                 .enumerate()
                 .filter(|(_, c)| *c == '#')
-                .map(move |(j, c)| ((i as i32, j as i32,), c.try_into().unwrap()))
+                .map(move |(j, c)| ((i as i32, j as i32, ), c.try_into().unwrap()))
         })
-        .collect::<HashMap<_, _>>()
-}
-
-#[aoc_generator(day20)]
-fn parse(input: &str) -> (Vec<Pixel>, Image) {
-    let (algorithm, image) = input.split_once("\n\n").unwrap();
-    let algorithm = algorithm.chars().map(|c| c.try_into().unwrap()).collect::<Vec<_>>();
-    let image = parse_image(image);
+        .collect::<HashMap<_, _>>();
 
     (algorithm, image)
 }
