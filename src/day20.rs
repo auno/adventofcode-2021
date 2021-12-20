@@ -101,16 +101,11 @@ fn enhance(algorithm: &Vec<Pixel>, image: &Image, oob: Pixel) -> (Image, Pixel) 
     (enhanced_image, enhanced_oob)
 }
 
-#[aoc(day20, part1)]
-fn part1((algorithm, image): &(Vec<Pixel>, Image)) -> usize {
-    let mut image = image.clone();
-    let mut oob = Pixel::Dark;
-
-    for _step in 0..2 {
-        let (enhanced_image, enhanced_oob) = enhance(algorithm, &image, oob);
-        image = enhanced_image;
-        oob = enhanced_oob;
-    }
+fn solve(algorithm: &Vec<Pixel>, image: &Image, steps: usize) -> usize {
+    let (image, _) = (0..steps).fold(
+        (image.clone(), Pixel::Dark),
+        |(image, obb), _step| enhance(algorithm, &image, obb)
+    );
 
     image
         .values()
@@ -118,21 +113,14 @@ fn part1((algorithm, image): &(Vec<Pixel>, Image)) -> usize {
         .count()
 }
 
+#[aoc(day20, part1)]
+fn part1((algorithm, image): &(Vec<Pixel>, Image)) -> usize {
+    solve(algorithm, image, 2)
+}
+
 #[aoc(day20, part2)]
 fn part2((algorithm, image): &(Vec<Pixel>, Image)) -> usize {
-    let mut image = image.clone();
-    let mut oob = Pixel::Dark;
-
-    for _step in 0..50 {
-        let (enhanced_image, enhanced_oob) = enhance(algorithm, &image, oob);
-        image = enhanced_image;
-        oob = enhanced_oob;
-    }
-
-    image
-        .values()
-        .filter(|p| **p == Pixel::Light)
-        .count()
+    solve(algorithm, image, 50)
 }
 
 #[cfg(test)]
