@@ -89,8 +89,7 @@ fn enhance(algorithm: &Vec<Pixel>, image: &Image, oob: Pixel) -> (Image, Pixel) 
                 Pixel::Dark => 0,
                 Pixel::Light => 1,
             })
-            .reduce(|acc, bit| (acc << 1) + bit)
-            .unwrap();
+            .fold(0, |acc, bit| (acc << 1) + bit);
 
         enhanced_image.insert((i, j), algorithm[index]);
     }
