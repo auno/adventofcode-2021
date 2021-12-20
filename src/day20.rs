@@ -52,9 +52,9 @@ fn parse_image(image: &str) -> Image {
 }
 
 #[aoc_generator(day20)]
-fn parse(input: &str) -> (Vec<char>, Image) {
+fn parse(input: &str) -> (Vec<Pixel>, Image) {
     let (algorithm, image) = input.split_once("\n\n").unwrap();
-    let algorithm = algorithm.chars().collect::<Vec<_>>();
+    let algorithm = algorithm.chars().map(|c| c.try_into().unwrap()).collect::<Vec<_>>();
     let image = parse_image(image);
 
     (algorithm, image)
@@ -71,7 +71,7 @@ fn image_bounds(image: &Image) -> (i32, i32, i32, i32) {
         ))
 }
 
-fn enhance(algorithm: &Vec<char>, image: &Image, oob: Pixel) -> (Image, Pixel) {
+fn enhance(algorithm: &Vec<Pixel>, image: &Image, oob: Pixel) -> (Image, Pixel) {
     let mut enhanced_image = HashMap::new();
     let (min_i, max_i, min_j, max_j) = image_bounds(image);
 
@@ -92,19 +92,19 @@ fn enhance(algorithm: &Vec<char>, image: &Image, oob: Pixel) -> (Image, Pixel) {
             .reduce(|acc, bit| (acc << 1) + bit)
             .unwrap();
 
-        enhanced_image.insert((i, j), algorithm[index].try_into().unwrap());
+        enhanced_image.insert((i, j), algorithm[index]);
     }
 
     let enhanced_oob: Pixel = match oob {
-        Pixel::Dark => algorithm[0].try_into().unwrap(),
-        Pixel::Light => algorithm[511].try_into().unwrap(),
+        Pixel::Dark => algorithm[0],
+        Pixel::Light => algorithm[511],
     };
 
     (enhanced_image, enhanced_oob)
 }
 
 #[aoc(day20, part1)]
-fn part1((algorithm, image): &(Vec<char>, Image)) -> usize {
+fn part1((algorithm, image): &(Vec<Pixel>, Image)) -> usize {
     let mut image = image.clone();
     let mut oob = Pixel::Dark;
 
@@ -121,7 +121,7 @@ fn part1((algorithm, image): &(Vec<char>, Image)) -> usize {
 }
 
 #[aoc(day20, part2)]
-fn part2((algorithm, image): &(Vec<char>, Image)) -> usize {
+fn part2((algorithm, image): &(Vec<Pixel>, Image)) -> usize {
     let mut image = image.clone();
     let mut oob = Pixel::Dark;
 
