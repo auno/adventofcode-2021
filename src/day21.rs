@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{max, min};
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::FoldWhile::{Continue, Done};
 use itertools::Itertools;
@@ -25,7 +25,7 @@ fn roll((position, score): &(i32, i32), step: i32) -> (i32, i32) {
 #[aoc(day21, part1)]
 fn part1((position_p1, position_p2): &(i32, i32)) -> i32 {
     let (p1, p2, rolls) = (0..)
-        .fold_while(((*position_p1, 0), (*position_p2, 0), 0), |(p1, p2, steps), step| {
+        .fold_while(((*position_p1, 0), (*position_p2, 0), 0), |(p1, p2, _), step| {
             let (p1, p2) = match step % 2 {
                 0 => (roll(&p1, step), p2),
                 1 => (p1, roll(&p2, step)),
@@ -42,6 +42,25 @@ fn part1((position_p1, position_p2): &(i32, i32)) -> i32 {
     min(p1.1, p2.1) * rolls
 }
 
+fn simulate((position, score): (i32, i32), other_player: (i32, i32)) -> (usize, usize) {
+    if other_player.1 >= 21 {
+        return (0, 1);
+    }
+
+    [ (3, 1), (4, 3), (5, 6), (6, 7), (7, 6), (8, 3), (9, 1) ].iter()
+        .fold((0, 0), |(current_player_wins, other_player_wins), &(outcome, multiplier)| {
+            let position = ((position + outcome - 1) % 10) + 1;
+            let wins = simulate(other_player, (position, score + position));
+            (current_player_wins + multiplier * wins.1, other_player_wins + multiplier * wins.0)
+        })
+}
+
+#[aoc(day21, part2)]
+fn part2((position_p1, position_p2): &(i32, i32)) -> usize {
+    let (wins_p1, wins_p2) = simulate((*position_p1, 0), (*position_p2, 0));
+    max(wins_p1, wins_p2)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -49,5 +68,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(739785, part1(&parse(include_str!("../input/2021/day21.part1.test.739785.txt"))));
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(444356092776315, part2(&parse(include_str!("../input/2021/day21.part2.test.444356092776315.txt"))));
     }
 }
