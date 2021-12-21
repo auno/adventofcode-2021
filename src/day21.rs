@@ -1,4 +1,5 @@
 use std::cmp::{max, min};
+use std::collections::HashMap;
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::FoldWhile::{Continue, Done};
 use itertools::Itertools;
@@ -42,22 +43,32 @@ fn part1((position_p1, position_p2): &(i32, i32)) -> i32 {
     min(p1.1, p2.1) * rolls
 }
 
-fn simulate((position, score): (i32, i32), other_player: (i32, i32)) -> (usize, usize) {
+type Cache = HashMap<((i32, i32), (i32, i32)), (usize, usize)>;
+
+fn simulate(cache: &mut Cache, (position, score): (i32, i32), other_player: (i32, i32)) -> (usize, usize) {
     if other_player.1 >= 21 {
         return (0, 1);
     }
 
-    [ (3, 1), (4, 3), (5, 6), (6, 7), (7, 6), (8, 3), (9, 1) ].iter()
+    if let Some(&cached_result) = cache.get(&((position, score), other_player)) {
+        return cached_result;
+    }
+
+    let result = [ (3, 1), (4, 3), (5, 6), (6, 7), (7, 6), (8, 3), (9, 1) ].iter()
         .fold((0, 0), |(current_player_wins, other_player_wins), &(outcome, multiplier)| {
             let position = ((position + outcome - 1) % 10) + 1;
-            let wins = simulate(other_player, (position, score + position));
+            let wins = simulate(cache, other_player, (position, score + position));
             (current_player_wins + multiplier * wins.1, other_player_wins + multiplier * wins.0)
-        })
+        });
+    cache.insert(((position, score), other_player), result);
+
+    result
 }
 
 #[aoc(day21, part2)]
 fn part2((position_p1, position_p2): &(i32, i32)) -> usize {
-    let (wins_p1, wins_p2) = simulate((*position_p1, 0), (*position_p2, 0));
+    let mut cache: Cache = HashMap::new();
+    let (wins_p1, wins_p2) = simulate(&mut cache, (*position_p1, 0), (*position_p2, 0));
     max(wins_p1, wins_p2)
 }
 
