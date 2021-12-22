@@ -112,10 +112,7 @@ fn part1(instructions: &Vec<(Instruction, Cuboid)>) -> i64 {
         .filter(|&(_, cuboid)| !empty(cuboid))
         .collect();
 
-    resolve(&instructions)
-        .iter()
-        .map(|&(xr, yr, zr)| (xr.1 - xr.0) * (yr.1 - yr.0) * (zr.1 - zr.0))
-        .sum()
+    part2(&instructions)
 }
 
 #[aoc(day22, part2)]
