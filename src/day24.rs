@@ -86,8 +86,8 @@ fn parse(_input: &str) -> () {}
  *     b = 14   15   15   -6   14   -4   15   15   11    0    0   -3   -9   -9
  *     c =  1    7   13   10    0   13   11    6    1    7   11   14    4   10
  *
- * we can see that `(z % 26) + b == w` is `false` if `a == 26` given corresponding values of `b`, and
- * otherwise `a` is `1`. This gives something like
+ * we can see that `(z % 26) + b == w` can only be `true` if `a == 26` given the corresponding
+ * values of `b`, and otherwise `a` is `1`. This gives something like
  *
  *     w = input()
  *
